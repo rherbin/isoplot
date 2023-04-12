@@ -49,15 +49,16 @@ class Graph:
                     rx = (x*delta*divdensity)/(100)
                     ry = (y*delta*divdensity)/(100)
                     line.append([rx, ry, self.func(rx,ry)])
-                values.append(line)
+                values += line
             #self.values = [[( (x*delta*divdensity) / (100) , (y*delta*divdensity) / (100) , func((x*delta*divdensity) / (100),(y*delta*divdensity) / (100))) for x in range(-100//divdensity,100//divdensity+1)] for y in range(-100//divdensity,100//divdensity+1)]
-            self.values = values
+            self.values = np.array(values)
 
         else:
             values = []
-            for y in range(-(delta*100)//divdensity,(delta*100)//divdensity+1):
+            delta = int(delta*100)
+            for y in range(-(delta)//(divdensity),(delta)//(divdensity)+1):
                 line = []
-                for x in range(-(delta*100)//divdensity,(delta*100)//divdensity+1):
+                for x in range(-(delta)//(divdensity),(delta)//(divdensity)+1):
                     rx = (x*divdensity)/(100)
                     ry = (y*divdensity)/(100)
                     line.append([rx, ry, self.func(rx,ry)])
@@ -138,13 +139,13 @@ while True:
     if keys[pg.K_DOWN]:
         height*=1/1.5
     if keys[pg.K_e]:
-        delta +=1
-        graph.evaluate(delta)
+        delta += .1
+        graph.evaluate(delta,8)
     if keys[pg.K_r]:
-        delta -= 1
-        graph.evaluate(delta)
+        delta -= .1
+        graph.evaluate(delta,8)
 
     graph.plot(height=height,rotate=rotate,zoom=zoom)
 
-    clock.tick(60)
+    clock.tick(30)
     pg.display.update()
