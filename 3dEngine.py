@@ -1,8 +1,9 @@
+from cmath import acos
 from random import randint
 from time import time
 import pygame as pg
 import sys
-from math import sqrt,sin,cos,pi,factorial
+from math import sqrt,sin,cos,pi,acos
 import numpy as np
 
 winsize = 1000
@@ -42,6 +43,7 @@ class Object:
         self.vertex = np.array([])
         self.edges = []
         self.faces = []
+        self.normals = []
         self.color = color
 
     def createVertex(self,list):
@@ -54,6 +56,7 @@ class Object:
         vertex = []
         edges = []
         faces = []
+        normals = []
         pos = np.array(pos)
         t1 = time()
         with open(name,"r") as f:
@@ -62,15 +65,18 @@ class Object:
                 if x[0] == "v":
                     vertex.append(np.array([float(x[1]),float(x[2]),float(x[3])])+pos)
                 elif x[0] == "f":
-                    edges.append((int(x[1].split("/")[0])-1,int(x[2].split("/")[0])-1))
-                    edges.append((int(x[2].split("/")[0])-1,int(x[3].split("/")[0])-1))
-                    edges.append((int(x[3].split("/")[0])-1,int(x[1].split("/")[0])-1))
+                    for i in range(1,len(x)-1):
+                        edges.append((int(x[i].split("/")[0])-1,int(x[i+1].split("/")[0])-1))
+                    edges.append((int(x[-1].split("/")[0])-1,int(x[1].split("/")[0])-1))
 
-                    faces.append(tuple(int(x[i].split("/")[0])-1 for i in range(1,4)))
+                    faces.append([tuple(int(x[i].split("/")[0])-1 for i in range(1,len(x))),int(x[1].split("/")[-1])])
+                elif x[0] == "vn":
+                    normals.append([float(i) for i in x[1:]])
             f.close()
         self.vertex = np.array(vertex)
         self.edges = edges
         self.faces = faces
+        self.normals = np.array(normals)
         t2 = time()
         print(f"Done loading model in {t2-t1} seconds")
     
@@ -101,18 +107,22 @@ class Object:
             pg.draw.line(display,"white",coords1,coords2)
         
         for c in self.faces:
-            coords1 = translated[c[0]]
-            coords2 = translated[c[1]]
-            coords3 = translated[c[2]]
+            coords = []
+            avg = np.array([0.0,0.0,0.0])
+            for x in c[0]:
+                coords.append(translated[x])
+                avg += self.vertex[x]
 
-            avg = (self.vertex[c[0]]+self.vertex[c[1]]+self.vertex[c[2]])/3
+            avg = avg/len(avg)
 
             dist = sqrt(np.sum((avg-cam)**2))
 
-            if coords1 == None or coords2 == None or coords3 == None:
+            if None in coords:
                 continue
+
+            angle = np.degrees(acos(np.dot(self.normals[c[1]-1],sun)/(np.linalg.norm(self.normals[c[1]-1])*np.linalg.norm(sun))))
             
-            poly.append(([coords1,coords2,coords3],dist,self.color))
+            poly.append((coords,dist,[255*(1-(angle/180))]*3))
 
         return poly
 
@@ -121,16 +131,13 @@ rz = 0
 ry = 0
 zoom = 1
 cam = np.array([-3.0,0.0,0.0])
+sun = np.array([-2.0,-1.0,0.0])
 
 objects = []
 
 object = Object("white")
-object.openOBJ("cube.obj")
+object.openOBJ("dog.obj")
 objects.append(object)
-
-object2 = Object("gray")
-object2.openOBJ("cube.obj",[2,0,0])
-objects.append(object2)
 
 pg.mouse.set_visible(False)
 
